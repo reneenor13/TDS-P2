@@ -43,7 +43,6 @@
       font-size: 1rem;
       color: #555;
     }
-
     main {
       background: white;
       padding: 25px;
@@ -52,13 +51,15 @@
       width: 100%;
       max-width: 650px;
       box-shadow: 0 3px 10px rgb(0 0 0 / 0.1);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
     }
-
     form.upload-form {
       display: flex;
       flex-direction: column;
       gap: 15px;
-      margin-bottom: 30px;
+      margin-bottom: 0;
     }
     form.upload-form label {
       font-weight: 600;
@@ -83,11 +84,12 @@
       border-radius: 6px;
       cursor: pointer;
       transition: background-color 0.3s ease;
+      align-self: flex-start;
+      width: 120px;
     }
     form.upload-form button:hover {
       background-color: #065abb;
     }
-
     #chatBox {
       border: 1px solid var(--border);
       border-radius: 8px;
@@ -97,15 +99,16 @@
       font-size: 1rem;
       line-height: 1.4;
       background: #fefefe;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
     }
     #chatBox div {
-      margin-bottom: 14px;
       padding-bottom: 8px;
       border-bottom: 1px solid #eee;
     }
     #chatBox div:last-child {
       border-bottom: none;
-      margin-bottom: 0;
       padding-bottom: 0;
     }
     .user-msg {
@@ -117,10 +120,12 @@
       color: #333;
       white-space: pre-wrap;
     }
-
     @media (max-width: 480px) {
       main {
         padding: 15px;
+      }
+      form.upload-form button {
+        width: 100%;
       }
     }
   </style>
@@ -133,18 +138,18 @@
 </header>
 
 <main>
-  <form id="uploadForm" class="upload-form" enctype="multipart/form-data">
+  <form id="uploadForm" class="upload-form" enctype="multipart/form-data" aria-label="Data Analyst Agent Input Form">
     <label for="question">Type your question:</label>
-    <input type="text" id="question" name="question" placeholder="Type your question here..." required autocomplete="off" />
+    <input type="text" id="question" name="question" placeholder="Type your question here..." required autocomplete="off" aria-required="true" />
     
     <label for="txtFile">Upload Questions (.txt) file (optional):</label>
-    <input type="file" id="txtFile" name="txtFile" accept=".txt" />
+    <input type="file" id="txtFile" name="txtFile" accept=".txt" aria-label="Upload text file of questions" />
     
     <label for="csvFile">Upload CSV Data (optional):</label>
-    <input type="file" id="csvFile" name="csvFile" accept=".csv" />
+    <input type="file" id="csvFile" name="csvFile" accept=".csv" aria-label="Upload CSV data file" />
     
     <label for="imageFile">Upload Image (optional):</label>
-    <input type="file" id="imageFile" name="imageFile" accept="image/*" />
+    <input type="file" id="imageFile" name="imageFile" accept="image/*" aria-label="Upload image file" />
     
     <button type="submit">Submit</button>
   </form>
@@ -157,22 +162,22 @@
 <script>
   const uploadForm = document.getElementById('uploadForm');
   const chatBox = document.getElementById('chatBox');
+  const questionInput = document.getElementById('question');
+  const submitButton = uploadForm.querySelector('button[type="submit"]');
 
   uploadForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const questionInput = document.getElementById('question');
     const question = questionInput.value.trim();
-
     if (!question) return;
 
-    // Show user's message in chatBox
     appendMessage('You', question, 'user-msg');
+    submitButton.disabled = true;
+    submitButton.textContent = 'Loading...';
 
-    // Prepare form data to send to backend
     const formData = new FormData(uploadForm);
 
     try {
-      const response = await fetch('/api/ask', {  // Adjust API endpoint accordingly
+      const response = await fetch('/api/ask', {
         method: 'POST',
         body: formData,
       });
@@ -180,13 +185,14 @@
       if (!response.ok) throw new Error('Network response was not ok');
 
       const data = await response.json();
-
       appendMessage('AI', data.answer || "Sorry, I didn't get that.", 'ai-msg');
     } catch (err) {
       appendMessage('AI', 'Error: ' + err.message, 'ai-msg');
     }
 
     questionInput.value = '';
+    submitButton.disabled = false;
+    submitButton.textContent = 'Submit';
     chatBox.scrollTop = chatBox.scrollHeight;
   });
 
@@ -195,6 +201,7 @@
     div.className = className;
     div.innerHTML = `<strong>${sender}:</strong> ${text}`;
     chatBox.appendChild(div);
+    chatBox.scrollTop = chatBox.scrollHeight;
   }
 </script>
 
