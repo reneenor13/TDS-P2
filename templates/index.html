@@ -45,27 +45,40 @@
       e.preventDefault();
       const formData = new FormData(uploadForm);
 
-      const response = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
+      try {
+        const response = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
 
-      const result = await response.json();
-      document.getElementById("uploadResponse").innerText =
-        result.answer || result.error || "No response.";
+        const result = await response.json();
+        document.getElementById("uploadResponse").innerText =
+          result.answer || result.error || "No response.";
+      } catch (error) {
+        document.getElementById("uploadResponse").innerText = "Error: " + error.message;
+      }
     });
 
     askBtn.addEventListener("click", async () => {
-      const question = document.getElementById("userQuestion").value;
-      const response = await fetch("/api/ask", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question }),
-      });
+      const question = document.getElementById("userQuestion").value.trim();
+      if (!question) {
+        document.getElementById("chatResponse").innerText = "Please enter a question.";
+        return;
+      }
 
-      const result = await response.json();
-      document.getElementById("chatResponse").innerText =
-        result.answer || result.error || "No response.";
+      try {
+        const response = await fetch("/api/ask", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question }),
+        });
+
+        const result = await response.json();
+        document.getElementById("chatResponse").innerText =
+          result.answer || result.error || "No response.";
+      } catch (error) {
+        document.getElementById("chatResponse").innerText = "Error: " + error.message;
+      }
     });
   </script>
 </body>
