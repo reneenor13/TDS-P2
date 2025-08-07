@@ -5,3 +5,7 @@ python-multipart
 google-generativeai==0.3.2
 python-dotenv
 openai
+requests
+pandas
+matplotlib
+seaborn
