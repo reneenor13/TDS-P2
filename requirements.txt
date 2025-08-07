@@ -1,8 +1,7 @@
-fastapi
-uvicorn
-pandas
-jinja2
-python-multipart
-pillow
-google-generativeai
-
+fastapi==0.111.0
+uvicorn==0.29.0
+pandas==2.2.2
+jinja2==3.1.4
+python-multipart==0.0.9
+pillow==10.3.0
+google-generativeai==0.4.1
