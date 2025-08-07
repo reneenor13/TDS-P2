@@ -1,0 +1,23 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Data Analyst Agent</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <h1>🛰️ Data Analyst Agent</h1>
+  <form method="POST" action="/api/" enctype="multipart/form-data">
+    <label>📝 Upload questions.txt:</label>
+    <input type="file" name="questions" required><br>
+
+    <label>📁 Upload data.csv (optional):</label>
+    <input type="file" name="data"><br>
+
+    <label>🖼️ Upload image.png (optional):</label>
+    <input type="file" name="image"><br>
+
+    <button type="submit">Analyze</button>
+  </form>
+</body>
+</html>
