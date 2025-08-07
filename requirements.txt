@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+aiofiles
+python-multipart
+pandas
+matplotlib
+openai
+jinja2
