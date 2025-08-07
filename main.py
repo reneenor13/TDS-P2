@@ -1,22 +1,31 @@
 import os
-from fastapi import FastAPI, UploadFile, Form, Request
+from fastapi import FastAPI, UploadFile, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from dotenv import load_dotenv
-import google.generativeai as genai
+import openai
 
-# Load .env if available
+# Load environment variables
 load_dotenv()
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-
-# Initialize Gemini model
-model = genai.GenerativeModel("gemini-pro")
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 # FastAPI app setup
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
+
+def ask_chatgpt(prompt: str) -> str:
+    """Send prompt to OpenAI ChatGPT and get response text."""
+    response = openai.ChatCompletion.create(
+        model="gpt-4o-mini",  # or "gpt-4" or "gpt-3.5-turbo" depending on your access
+        messages=[
+            {"role": "user", "content": prompt}
+        ],
+        max_tokens=1000,
+        temperature=0.7,
+    )
+    return response.choices[0].message.content.strip()
 
 @app.get("/", response_class=HTMLResponse)
 async def serve_home(request: Request):
@@ -29,8 +38,8 @@ async def ask_question(data: dict):
         if not question:
             return JSONResponse(content={"error": "Question cannot be empty"}, status_code=400)
 
-        response = model.generate_content(question)
-        return {"answer": response.text}
+        answer = ask_chatgpt(question)
+        return {"answer": answer}
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
@@ -47,19 +56,20 @@ async def upload_files(
         if questionsFile:
             text = await questionsFile.read()
             content = text.decode("utf-8")
-            response = model.generate_content(content)
-            response_text += "📄 **Questions.txt Answer**:\n" + response.text + "\n\n"
+            answer = ask_chatgpt(content)
+            response_text += "📄 **Questions.txt Answer**:\n" + answer + "\n\n"
 
         # Process csv file
         if csvFile:
             data = await csvFile.read()
             content = data.decode("utf-8")
-            response = model.generate_content(f"This is the CSV data:\n{content}\n\nSummarise and analyse it.")
-            response_text += "📊 **CSV Analysis**:\n" + response.text + "\n\n"
+            prompt = f"This is the CSV data:\n{content}\n\nPlease summarise and analyse it."
+            answer = ask_chatgpt(prompt)
+            response_text += "📊 **CSV Analysis**:\n" + answer + "\n\n"
 
-        # Process image file (Gemini doesn't support image input via Python SDK yet)
+        # Process image file (OpenAI API does not process images here)
         if imageFile:
-            response_text += "🖼️ **Image** uploaded, but Gemini's image input is not supported in Python SDK yet.\n"
+            response_text += "🖼️ **Image** uploaded, but image processing is not supported in this API setup.\n"
 
         if not response_text:
             response_text = "No files uploaded."
