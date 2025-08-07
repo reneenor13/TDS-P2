@@ -4,15 +4,12 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from dotenv import load_dotenv
-from openai import OpenAI
-import asyncio
+import openai
 
 # Load environment variables
 load_dotenv()
-api_key = os.getenv("OPENAI_API_KEY")
 
-# OpenAI client setup (for openai>=1.0.0)
-client = OpenAI(api_key=api_key)
+client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # FastAPI app setup
 app = FastAPI()
@@ -20,12 +17,14 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 def ask_chatgpt(prompt: str) -> str:
-    """Send prompt to OpenAI and return the response text using new SDK."""
+    """Send prompt to OpenAI and return response text using new SDK syntax."""
     response = client.chat.completions.create(
-        model="gpt-4o",  # or "gpt-4", "gpt-3.5-turbo"
-        messages=[{"role": "user", "content": prompt}],
+        model="gpt-4o",  # or "gpt-4" / "gpt-3.5-turbo"
+        messages=[
+            {"role": "user", "content": prompt}
+        ],
         max_tokens=1000,
-        temperature=0.7
+        temperature=0.7,
     )
     return response.choices[0].message.content.strip()
 
@@ -40,7 +39,7 @@ async def ask_question(data: dict):
         if not question:
             return JSONResponse(content={"error": "Question cannot be empty"}, status_code=400)
 
-        answer = await asyncio.to_thread(ask_chatgpt, question)
+        answer = ask_chatgpt(question)
         return {"answer": answer}
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
@@ -58,7 +57,7 @@ async def upload_files(
         if questionsFile:
             text = await questionsFile.read()
             content = text.decode("utf-8")
-            answer = await asyncio.to_thread(ask_chatgpt, content)
+            answer = ask_chatgpt(content)
             response_text += "📄 **Questions.txt Answer**:\n" + answer + "\n\n"
 
         # Process csv file
@@ -66,10 +65,10 @@ async def upload_files(
             data = await csvFile.read()
             content = data.decode("utf-8")
             prompt = f"This is the CSV data:\n{content}\n\nPlease summarise and analyse it."
-            answer = await asyncio.to_thread(ask_chatgpt, prompt)
+            answer = ask_chatgpt(prompt)
             response_text += "📊 **CSV Analysis**:\n" + answer + "\n\n"
 
-        # Image processing not supported
+        # Process image file (OpenAI does not support image in this backend yet)
         if imageFile:
             response_text += "🖼️ **Image** uploaded, but image processing is not supported in this API setup.\n"
 
