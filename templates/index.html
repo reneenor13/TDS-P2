@@ -3,76 +3,69 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Tools in Data Science Project 2</title>
+  <title>Data Analyst Agent</title>
   <link rel="stylesheet" href="/static/style.css" />
 </head>
 <body>
-  <!-- HEADER -->
   <div class="header">
     <h1>Tools in Data Science Project 2: Data Analyst Agent</h1>
     <p>Renee Noronha | 23f3003731@ds.study.iitm.ac.in</p>
   </div>
 
-  <!-- UPLOAD FORM -->
-  <div class="form-box">
-    <h2>Upload Files & Ask a Question</h2>
+  <div class="container">
     <form id="uploadForm">
-      <label>Upload Questions (.txt) file (optional):</label><br />
-      <input type="file" name="txt_file" accept=".txt" /><br /><br />
+      <label>Upload Questions (.txt) file (optional):</label>
+      <input type="file" id="questionsFile" name="questionsFile" accept=".txt" />
 
-      <label>Upload CSV Data (optional):</label><br />
-      <input type="file" name="csv_file" accept=".csv" /><br /><br />
+      <label>Upload CSV Data (optional):</label>
+      <input type="file" id="csvFile" name="csvFile" accept=".csv" />
 
-      <label>Upload an Image (optional):</label><br />
-      <input type="file" name="image" accept="image/*" /><br /><br />
-
-      <label>Your Question:</label><br />
-      <input type="text" name="question" required /><br /><br />
+      <label>Upload Image (optional):</label>
+      <input type="file" id="imageFile" name="imageFile" accept="image/*" />
 
       <button type="submit">Submit</button>
     </form>
-    <div id="uploadResponse" class="response-box"></div>
-  </div>
 
-  <!-- CHAT FORM -->
-  <div class="chat-box">
-    <h2>Ask AI Anything</h2>
-    <form id="chatForm">
-      <label>Type your question:</label><br />
-      <input type="text" id="chatInput" required />
-      <button type="submit">Ask AI</button>
-    </form>
+    <div id="uploadResponse" class="response-box"></div>
+
+    <hr style="margin: 30px 0;"/>
+
+    <label for="userQuestion">Type your question:</label>
+    <input type="text" id="userQuestion" placeholder="Enter your question here..." />
+    <button id="askBtn">Ask AI</button>
+
     <div id="chatResponse" class="response-box"></div>
   </div>
 
   <script>
-    // Handle Upload Form
-    document.getElementById("uploadForm").addEventListener("submit", async (e) => {
+    const uploadForm = document.getElementById("uploadForm");
+    const askBtn = document.getElementById("askBtn");
+
+    uploadForm.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const formData = new FormData(e.target);
-      const res = await fetch("/api/upload", {
+      const formData = new FormData(uploadForm);
+
+      const response = await fetch("/api/upload", {
         method: "POST",
         body: formData,
       });
-      const data = await res.json();
+
+      const result = await response.json();
       document.getElementById("uploadResponse").innerText =
-        data.answer || data.error || "No response";
+        result.answer || result.error || "No response.";
     });
 
-    // Handle Chat Form
-    document.getElementById("chatForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const question = document.getElementById("chatInput").value;
-      const formData = new FormData();
-      formData.append("question", question);
-
-      const res = await fetch("/api/ask", {
+    askBtn.addEventListener("click", async () => {
+      const question = document.getElementById("userQuestion").value;
+      const response = await fetch("/api/ask", {
         method: "POST",
-        body: formData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question }),
       });
-      const data = await res.json();
+
+      const result = await response.json();
       document.getElementById("chatResponse").innerText =
-        data.answer || data.error || "No response";
+        result.answer || result.error || "No response.";
     });
   </script>
 </body>
