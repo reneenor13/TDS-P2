@@ -1,87 +1,69 @@
-from fastapi import FastAPI, UploadFile, File, Form, Request
-from fastapi.responses import JSONResponse
-from fastapi.staticfiles import StaticFiles
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.templating import Jinja2Templates
-import google.generativeai as genai
-import pandas as pd
 import os
+from fastapi import FastAPI, UploadFile, Form, Request
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from dotenv import load_dotenv
+import google.generativeai as genai
 
-# ⛳ 1. Configure Gemini
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-if not GEMINI_API_KEY:
-    raise RuntimeError("❌ GEMINI_API_KEY is not set.")
+# Load .env if available
+load_dotenv()
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
-genai.configure(api_key=GEMINI_API_KEY)
+# Initialize Gemini model
 model = genai.GenerativeModel("gemini-pro")
 
-# 🚀 2. FastAPI app setup
+# FastAPI app setup
 app = FastAPI()
-
-# Allow static files (JS/CSS)
 app.mount("/static", StaticFiles(directory="static"), name="static")
-
-# Jinja2 templates
 templates = Jinja2Templates(directory="templates")
 
-# CORS (during dev)
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Adjust for production
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# In-memory session data
-session_data = {"csv": None, "text": None}
-
-# 🏠 3. Homepage route
-@app.get("/")
-async def home(request: Request):
+@app.get("/", response_class=HTMLResponse)
+async def serve_home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
-# 📤 4. Upload endpoint
+@app.post("/api/ask")
+async def ask_question(data: dict):
+    try:
+        question = data.get("question")
+        if not question:
+            return JSONResponse(content={"error": "Question cannot be empty"}, status_code=400)
+
+        response = model.generate_content(question)
+        return {"answer": response.text}
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
 @app.post("/api/upload")
-async def upload(
-    questionsFile: UploadFile = File(None),
-    csvFile: UploadFile = File(None),
-    imageFile: UploadFile = File(None)
+async def upload_files(
+    questionsFile: UploadFile = None,
+    csvFile: UploadFile = None,
+    imageFile: UploadFile = None
 ):
     try:
-        if csvFile:
-            df = pd.read_csv(csvFile.file)
-            session_data["csv"] = df
+        response_text = ""
 
+        # Process questions.txt
         if questionsFile:
-            session_data["text"] = await questionsFile.read()
+            text = await questionsFile.read()
+            content = text.decode("utf-8")
+            response = model.generate_content(content)
+            response_text += "📄 **Questions.txt Answer**:\n" + response.text + "\n\n"
 
-        return {"answer": "Files uploaded successfully. You can now ask a question."}
+        # Process csv file
+        if csvFile:
+            data = await csvFile.read()
+            content = data.decode("utf-8")
+            response = model.generate_content(f"This is the CSV data:\n{content}\n\nSummarise and analyse it.")
+            response_text += "📊 **CSV Analysis**:\n" + response.text + "\n\n"
+
+        # Process image file (Gemini doesn't support image input via Python SDK yet)
+        if imageFile:
+            response_text += "🖼️ **Image** uploaded, but Gemini's image input is not supported in Python SDK yet.\n"
+
+        if not response_text:
+            response_text = "No files uploaded."
+
+        return {"answer": response_text.strip()}
     except Exception as e:
-        return JSONResponse(status_code=500, content={"error": str(e)})
-
-# 💬 5. Ask question endpoint
-@app.post("/api/ask")
-async def ask(request: Request):
-    try:
-        data = await request.json()
-        question = data.get("question", "").strip()
-        if not question:
-            return {"error": "No question provided."}
-
-        prompt_parts = [question]
-
-        if session_data["csv"] is not None:
-            preview = session_data["csv"].head(5).to_string()
-            prompt_parts.append("CSV Data:\n" + preview)
-
-        if session_data["text"] is not None:
-            prompt_parts.append("Text Data:\n" + session_data["text"].decode())
-
-        prompt = "\n\n".join(prompt_parts)
-
-        response = model.generate_content(prompt)
-        return {"answer": response.text}
-
-    except Exception as e:
-        return JSONResponse(status_code=500, content={"error": str(e)})
+        return JSONResponse(content={"error": str(e)}, status_code=500)
