@@ -1,8 +1,7 @@
 fastapi
 uvicorn
-aiofiles
-python-multipart
 pandas
-matplotlib
-openai
 jinja2
+python-multipart
+pillow
+google-generativeai
