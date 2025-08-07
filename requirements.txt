@@ -1,6 +1,6 @@
 fastapi
 uvicorn
-pandas==2.1.4
+pandas
 jinja2
 python-multipart
 pillow
