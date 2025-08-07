@@ -35,7 +35,7 @@ async def get_index(request: Request):
 
 
 # --- AI Logic Function ---
-def ask_gemini(prompt):
+def ask_gemini(prompt: str) -> str:
     try:
         model = genai.GenerativeModel("gemini-pro")
         response = model.generate_content(prompt)
@@ -44,46 +44,31 @@ def ask_gemini(prompt):
         return f"Error: {str(e)}"
 
 
-# --- Endpoint for chat ---
+# --- Endpoint for chat (single question only) ---
 @app.post("/api/ask")
-async def ask_endpoint(request: Request):
-    try:
-        data = await request.json()
-        user_input = data.get("question", "")
-        if not user_input:
-            return JSONResponse({"answer": "Please provide a question."}, status_code=400)
-        answer = ask_gemini(user_input)
-        return {"answer": answer}
-    except Exception as e:
-        return JSONResponse({"answer": f"Error: {str(e)}"}, status_code=500)
+async def ask_endpoint(question: str = Form(...)):
+    if not question.strip():
+        return JSONResponse({"answer": "Please provide a question."}, status_code=400)
+    answer = ask_gemini(question)
+    return {"answer": answer}
 
 
 # --- Endpoint for file upload and question ---
 @app.post("/api/upload")
 async def upload_endpoint(
     question: str = Form(...),
-    questions_file: UploadFile = File(None),
-    csv_file: UploadFile = File(None),
-    image_file: UploadFile = File(None),
+    file: UploadFile = File(None),
 ):
     try:
-        # Build full context from files
         file_text = ""
-
-        if questions_file:
-            file_text += f"\n\n[Questions file: {questions_file.filename}]\n"
-            file_text += (await questions_file.read()).decode("utf-8")
-
-        if csv_file:
-            file_text += f"\n\n[CSV file: {csv_file.filename}]\n"
-            file_text += (await csv_file.read()).decode("utf-8")
-
-        if image_file:
-            file_text += f"\n\n[Image file: {image_file.filename}] - Note: image upload not supported in Gemini Pro (text-only)"
-
+        if file:
+            content = await file.read()
+            try:
+                file_text = content.decode("utf-8")
+            except UnicodeDecodeError:
+                file_text = f"[File {file.filename} is not a text file or cannot be decoded]"
+        
         prompt = f"{file_text}\n\nUser question: {question}"
-
-        # Send to Gemini
         answer = ask_gemini(prompt)
         return {"answer": answer}
     except Exception as e:
