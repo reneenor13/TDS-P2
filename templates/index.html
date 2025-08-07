@@ -2,298 +2,67 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Tools in Data Science Project 2: Data Analyst Agent</title>
-  <style>
-    :root {
-      --blue: #0a72e8;
-      --background: #f9fbff;
-      --text-primary: #222;
-      --border: #d1d9e6;
-      --input-bg: #fff;
-      --input-border: #ccc;
-    }
-    * {
-      box-sizing: border-box;
-    }
-    body {
-      margin: 0;
-      font-family: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", Segoe UI Symbol, "Noto Color Emoji";
-      background-color: var(--background);
-      color: var(--text-primary);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
-      padding: 20px;
-    }
-    header {
-      background-color: var(--blue);
-      color: white;
-      text-align: center;
-      padding: 20px 15px;
-      border-radius: 8px;
-      width: 100%;
-      max-width: 650px;
-      margin-bottom: 25px;
-      font-weight: 600;
-      line-height: 1.4;
-      user-select: none;
-    }
-    header h1 {
-      margin: 0 0 8px 0;
-      font-weight: 700;
-      font-size: 1.6rem;
-    }
-    header p {
-      margin: 0;
-      font-weight: 500;
-      font-size: 1rem;
-    }
-
-    main {
-      background: white;
-      padding: 25px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      width: 100%;
-      max-width: 650px;
-      box-shadow: 0 3px 10px rgb(0 0 0 / 0.1);
-      margin-bottom: 30px;
-    }
-
-    form.upload-form {
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-      margin-bottom: 15px;
-    }
-    form.upload-form label {
-      font-weight: 600;
-      color: var(--blue);
-      margin-bottom: 6px;
-    }
-    form.upload-form input[type="file"] {
-      font-size: 1rem;
-      border: none;
-      background-color: var(--input-bg);
-    }
-    form.upload-form button {
-      background-color: var(--blue);
-      color: white;
-      padding: 12px;
-      font-weight: 700;
-      font-size: 1.1rem;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: background-color 0.3s ease;
-      max-width: 150px;
-      align-self: flex-start;
-    }
-    form.upload-form button:hover {
-      background-color: #065abb;
-    }
-
-    #uploadResponse {
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      background: #fefefe;
-      padding: 15px;
-      min-height: 100px;
-      font-size: 1rem;
-      line-height: 1.4;
-      white-space: pre-wrap;
-      margin-top: 10px;
-      color: #333;
-    }
-
-    /* Chat section below */
-
-    #chatSection {
-      background: white;
-      padding: 20px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      width: 100%;
-      max-width: 650px;
-      box-shadow: 0 3px 10px rgb(0 0 0 / 0.1);
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-    }
-
-    #chatBox {
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      height: 320px;
-      overflow-y: auto;
-      padding: 15px;
-      font-size: 1rem;
-      line-height: 1.4;
-      background: #fefefe;
-    }
-    #chatBox div {
-      margin-bottom: 14px;
-      padding-bottom: 8px;
-      border-bottom: 1px solid #eee;
-    }
-    #chatBox div:last-child {
-      border-bottom: none;
-      margin-bottom: 0;
-      padding-bottom: 0;
-    }
-    .user-msg {
-      font-weight: 600;
-      color: var(--blue);
-    }
-    .ai-msg {
-      font-weight: 500;
-      color: #333;
-      white-space: pre-wrap;
-    }
-
-    #chatForm {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-    }
-    #chatForm input[type="text"] {
-      flex-grow: 1;
-      padding: 10px;
-      font-size: 1rem;
-      border: 1px solid var(--input-border);
-      border-radius: 6px;
-      background-color: var(--input-bg);
-    }
-    #chatForm button {
-      background-color: var(--blue);
-      color: white;
-      padding: 10px 20px;
-      font-weight: 700;
-      font-size: 1rem;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: background-color 0.3s ease;
-    }
-    #chatForm button:hover {
-      background-color: #065abb;
-    }
-
-    @media (max-width: 480px) {
-      main, #chatSection {
-        padding: 15px;
-      }
-    }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tools in Data Science Project 2</title>
+  <link rel="stylesheet" href="/static/style.css" />
 </head>
 <body>
-
-<header>
-  <h1>Tools in Data Science Project 2: Data Analyst Agent</h1>
-  <p>Renee Noronha | 23f3003731@ds.study.iitm.ac.in</p>
-</header>
-
-<main>
-  <form id="uploadForm" class="upload-form" enctype="multipart/form-data">
-    <label for="txtFile">Upload Questions (.txt) file (optional):</label>
-    <input type="file" id="txtFile" name="txtFile" accept=".txt" />
-
-    <label for="csvFile">Upload CSV Data (optional):</label>
-    <input type="file" id="csvFile" name="csvFile" accept=".csv" />
-
-    <label for="imageFile">Upload Image (optional):</label>
-    <input type="file" id="imageFile" name="imageFile" accept="image/*" />
-
-    <button type="submit">Submit</button>
-  </form>
-
-  <div id="uploadResponse" aria-live="polite" aria-atomic="false" role="region">
-    <!-- Upload response or AI answers from file uploads appear here -->
-  </div>
-</main>
-
-<section id="chatSection" aria-label="Chat with AI">
-  <div id="chatBox" role="log" aria-live="polite" aria-atomic="false">
-    <!-- Chat messages will appear here -->
+  <div class="header">
+    <h1>Tools in Data Science Project 2: Data Analyst Agent</h1>
+    <p>Renee Noronha | 23f3003731@ds.study.iitm.ac.in</p>
   </div>
 
-  <form id="chatForm" autocomplete="off">
-    <input type="text" id="chatInput" name="chatInput" placeholder="Type your question:" required />
-    <button type="submit">Ask AI</button>
-  </form>
-</section>
+  <div class="form-box">
+    <h2>Upload Files & Ask a Question</h2>
+    <form id="uploadForm">
+      <label>Upload Questions (.txt) file (optional):</label><br />
+      <input type="file" name="file" /><br /><br />
 
-<script>
-  // Upload form logic
-  const uploadForm = document.getElementById('uploadForm');
-  const uploadResponse = document.getElementById('uploadResponse');
+      <label>Ask a question:</label><br />
+      <input type="text" name="question" required /><br /><br />
 
-  uploadForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
+      <button type="submit">Submit</button>
+    </form>
+    <div id="uploadResponse" class="response-box"></div>
+  </div>
 
-    const formData = new FormData(uploadForm);
+  <div class="chat-box">
+    <h2>Ask AI Anything</h2>
+    <form id="chatForm">
+      <label>Type your question:</label><br />
+      <input type="text" id="chatInput" required />
+      <button type="submit">Ask AI</button>
+    </form>
+    <div id="chatResponse" class="response-box"></div>
+  </div>
 
-    try {
-      const response = await fetch('/api/upload', {
-        method: 'POST',
+  <script>
+    document.getElementById("uploadForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      const res = await fetch("/api/upload", {
+        method: "POST",
         body: formData,
       });
+      const data = await res.json();
+      document.getElementById("uploadResponse").innerText =
+        data.answer || data.error || "No response";
+    });
 
-      if (!response.ok) throw new Error('Network response was not ok');
-
-      const data = await response.json();
-
-      uploadResponse.textContent = data.answer || "No response from AI.";
-    } catch (err) {
-      uploadResponse.textContent = 'Error: ' + err.message;
-    }
-  });
-
-  // Chat logic
-  const chatForm = document.getElementById('chatForm');
-  const chatBox = document.getElementById('chatBox');
-  const chatInput = document.getElementById('chatInput');
-
-  chatForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const question = chatInput.value.trim();
-
-    if (!question) return;
-
-    appendMessage('You', question, 'user-msg');
-
-    try {
+    document.getElementById("chatForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const question = document.getElementById("chatInput").value;
       const formData = new FormData();
-      formData.append('question', question);
+      formData.append("question", question);
 
-      const response = await fetch('/api/ask', {
-        method: 'POST',
+      const res = await fetch("/api/ask", {
+        method: "POST",
         body: formData,
       });
-
-      if (!response.ok) throw new Error('Network response was not ok');
-
-      const data = await response.json();
-
-      appendMessage('AI', data.answer || "Sorry, I didn't get that.", 'ai-msg');
-    } catch (err) {
-      appendMessage('AI', 'Error: ' + err.message, 'ai-msg');
-    }
-
-    chatInput.value = '';
-    chatInput.focus();
-  });
-
-  function appendMessage(sender, text, cssClass) {
-    const div = document.createElement('div');
-    div.className = cssClass;
-    div.innerHTML = `<strong>${sender}:</strong> ${text}`;
-    chatBox.appendChild(div);
-    chatBox.scrollTop = chatBox.scrollHeight;
-  }
-</script>
-
+      const data = await res.json();
+      document.getElementById("chatResponse").innerText =
+        data.answer || data.error || "No response";
+    });
+  </script>
 </body>
 </html>
