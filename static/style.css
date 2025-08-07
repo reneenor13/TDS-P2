@@ -1,38 +1,53 @@
 body {
-  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   margin: 0;
   padding: 0;
-  background: #f9f9f9;
-  color: #333;
+  background-color: #f2f2f2;
 }
 
 .header {
-  background-color: #0f62fe;
+  background-color: #1e40af;
   color: white;
+  padding: 20px;
   text-align: center;
+}
+
+.container {
+  max-width: 800px;
+  margin: 30px auto;
   padding: 20px;
 }
 
-.form-box, .chat-box {
-  background: white;
-  max-width: 600px;
-  margin: 20px auto;
+.card {
+  background-color: white;
   padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  border-radius: 10px;
+  margin-bottom: 30px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
-input[type="text"], input[type="file"] {
+.card h2 {
+  margin-top: 0;
+  color: #1e3a8a;
+}
+
+label {
+  display: block;
+  margin: 10px 0 5px;
+  font-weight: bold;
+}
+
+input[type="text"],
+input[type="file"] {
   width: 100%;
   padding: 10px;
-  margin-top: 5px;
-  margin-bottom: 10px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
+  margin-bottom: 15px;
+  border: 1px solid #d1d5db;
+  border-radius: 5px;
 }
 
 button {
-  background-color: #0f62fe;
+  background-color: #1e40af;
   color: white;
   padding: 10px 16px;
   border: none;
@@ -41,13 +56,25 @@ button {
 }
 
 button:hover {
-  background-color: #0047ba;
+  background-color: #1e3a8a;
+}
+
+.chat-box {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+#chat-input {
+  flex: 1;
 }
 
 .response-box {
   margin-top: 15px;
-  background: #f0f4ff;
-  padding: 10px;
-  border-radius: 8px;
   white-space: pre-wrap;
+  background-color: #f9fafb;
+  padding: 15px;
+  border-left: 4px solid #1e40af;
+  border-radius: 5px;
+  font-family: monospace;
 }
