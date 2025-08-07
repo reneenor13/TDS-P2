@@ -4,39 +4,36 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 import google.generativeai as genai
 import os
-from dotenv import load_dotenv
 import pandas as pd
 
-load_dotenv()  # Load .env file if exists
+# Get Gemini API key
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+if not GEMINI_API_KEY:
+    raise RuntimeError("Missing GEMINI_API_KEY in environment.")
 
+# Configure Gemini
+genai.configure(api_key=GEMINI_API_KEY)
+model = genai.GenerativeModel("gemini-pro")
+
+# FastAPI app setup
 app = FastAPI()
 
-# Allow frontend to talk to backend (CORS)
+# CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=["*"], allow_credentials=True,
+    allow_methods=["*"], allow_headers=["*"]
 )
 
-# Serve frontend static files
+# Mount static files (index.html, style.css, etc.)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.mount("/", StaticFiles(directory="static", html=True), name="frontend")
 
-# ✅ Configure Gemini
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-if not GOOGLE_API_KEY:
-    raise RuntimeError("Missing GOOGLE_API_KEY in environment variables.")
-
-genai.configure(api_key=GOOGLE_API_KEY)
-model = genai.GenerativeModel("gemini-pro")
-
-# Store uploaded data (in-memory)
+# In-memory storage for uploaded content
 session_data = {"csv": None, "text": None}
 
 
-# ✅ Route: Upload data + optional question
+# ✅ Route: Upload files
 @app.post("/api/upload")
 async def upload_files(
     questionsFile: UploadFile = File(None),
@@ -70,10 +67,10 @@ async def ask_question(request: Request):
 
         if session_data["csv"] is not None:
             csv_preview = session_data["csv"].head(5).to_string()
-            prompt_parts.append("Here’s a preview of the data:\n" + csv_preview)
+            prompt_parts.append("CSV Preview:\n" + csv_preview)
 
         if session_data["text"] is not None:
-            prompt_parts.append("Here’s some context from the text file:\n" + session_data["text"].decode())
+            prompt_parts.append("Text file content:\n" + session_data["text"].decode())
 
         prompt = "\n\n".join(prompt_parts)
 
