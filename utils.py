@@ -1,18 +1,25 @@
-import google.generativeai as genai
 import os
+from dotenv import load_dotenv
+import openai
 
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+# Load environment variables
+load_dotenv()
 
-def ask_gemini(questions, context="", image_bytes=None):
-    model = genai.GenerativeModel("gemini-pro-vision" if image_bytes else "gemini-pro")
+client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-    if image_bytes:
-        from PIL import Image
-        import io
-        img = Image.open(io.BytesIO(image_bytes))
-        parts = [context + "\n" + questions, img]
-    else:
-        parts = context + "\n" + questions
-
-    response = model.generate_content(parts)
-    return response.text
+def ask_openai(prompt: str, model: str = "gpt-4o") -> str:
+    """
+    Send a prompt to OpenAI's chat model and return the response text.
+    """
+    try:
+        response = client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=1000,
+            temperature=0.7,
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        return f"❌ Error: {str(e)}"
