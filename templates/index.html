@@ -28,21 +28,29 @@
       padding: 20px;
     }
     header {
+      background-color: var(--blue);
+      color: white;
       text-align: center;
+      padding: 20px 15px;
+      border-radius: 8px;
+      width: 100%;
+      max-width: 650px;
       margin-bottom: 25px;
+      font-weight: 600;
+      line-height: 1.4;
+      user-select: none;
     }
     header h1 {
-      margin: 0;
+      margin: 0 0 8px 0;
       font-weight: 700;
-      font-size: 1.8rem;
-      color: var(--blue);
+      font-size: 1.6rem;
     }
     header p {
-      margin: 5px 0 0;
+      margin: 0;
       font-weight: 500;
       font-size: 1rem;
-      color: #555;
     }
+
     main {
       background: white;
       padding: 25px;
@@ -51,27 +59,23 @@
       width: 100%;
       max-width: 650px;
       box-shadow: 0 3px 10px rgb(0 0 0 / 0.1);
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
+      margin-bottom: 30px;
     }
+
     form.upload-form {
       display: flex;
       flex-direction: column;
       gap: 15px;
-      margin-bottom: 0;
+      margin-bottom: 15px;
     }
     form.upload-form label {
       font-weight: 600;
       color: var(--blue);
       margin-bottom: 6px;
     }
-    form.upload-form input[type="file"],
-    form.upload-form input[type="text"] {
-      padding: 10px;
+    form.upload-form input[type="file"] {
       font-size: 1rem;
-      border: 1px solid var(--input-border);
-      border-radius: 5px;
+      border: none;
       background-color: var(--input-bg);
     }
     form.upload-form button {
@@ -84,12 +88,41 @@
       border-radius: 6px;
       cursor: pointer;
       transition: background-color 0.3s ease;
+      max-width: 150px;
       align-self: flex-start;
-      width: 120px;
     }
     form.upload-form button:hover {
       background-color: #065abb;
     }
+
+    #uploadResponse {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #fefefe;
+      padding: 15px;
+      min-height: 100px;
+      font-size: 1rem;
+      line-height: 1.4;
+      white-space: pre-wrap;
+      margin-top: 10px;
+      color: #333;
+    }
+
+    /* Chat section below */
+
+    #chatSection {
+      background: white;
+      padding: 20px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      width: 100%;
+      max-width: 650px;
+      box-shadow: 0 3px 10px rgb(0 0 0 / 0.1);
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
     #chatBox {
       border: 1px solid var(--border);
       border-radius: 8px;
@@ -99,16 +132,15 @@
       font-size: 1rem;
       line-height: 1.4;
       background: #fefefe;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
     }
     #chatBox div {
+      margin-bottom: 14px;
       padding-bottom: 8px;
       border-bottom: 1px solid #eee;
     }
     #chatBox div:last-child {
       border-bottom: none;
+      margin-bottom: 0;
       padding-bottom: 0;
     }
     .user-msg {
@@ -120,12 +152,38 @@
       color: #333;
       white-space: pre-wrap;
     }
+
+    #chatForm {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    #chatForm input[type="text"] {
+      flex-grow: 1;
+      padding: 10px;
+      font-size: 1rem;
+      border: 1px solid var(--input-border);
+      border-radius: 6px;
+      background-color: var(--input-bg);
+    }
+    #chatForm button {
+      background-color: var(--blue);
+      color: white;
+      padding: 10px 20px;
+      font-weight: 700;
+      font-size: 1rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    #chatForm button:hover {
+      background-color: #065abb;
+    }
+
     @media (max-width: 480px) {
-      main {
+      main, #chatSection {
         padding: 15px;
-      }
-      form.upload-form button {
-        width: 100%;
       }
     }
   </style>
@@ -134,49 +192,82 @@
 
 <header>
   <h1>Tools in Data Science Project 2: Data Analyst Agent</h1>
-  <p>Renee Noronha - 23f3003731@ds.study.iitm.ac.in</p>
+  <p>Renee Noronha | 23f3003731@ds.study.iitm.ac.in</p>
 </header>
 
 <main>
-  <form id="uploadForm" class="upload-form" enctype="multipart/form-data" aria-label="Data Analyst Agent Input Form">
-    <label for="question">Type your question:</label>
-    <input type="text" id="question" name="question" placeholder="Type your question here..." required autocomplete="off" aria-required="true" />
-    
+  <form id="uploadForm" class="upload-form" enctype="multipart/form-data">
     <label for="txtFile">Upload Questions (.txt) file (optional):</label>
-    <input type="file" id="txtFile" name="txtFile" accept=".txt" aria-label="Upload text file of questions" />
-    
+    <input type="file" id="txtFile" name="txtFile" accept=".txt" />
+
     <label for="csvFile">Upload CSV Data (optional):</label>
-    <input type="file" id="csvFile" name="csvFile" accept=".csv" aria-label="Upload CSV data file" />
-    
+    <input type="file" id="csvFile" name="csvFile" accept=".csv" />
+
     <label for="imageFile">Upload Image (optional):</label>
-    <input type="file" id="imageFile" name="imageFile" accept="image/*" aria-label="Upload image file" />
-    
+    <input type="file" id="imageFile" name="imageFile" accept="image/*" />
+
     <button type="submit">Submit</button>
   </form>
 
-  <section id="chatBox" aria-live="polite" aria-atomic="false" role="log">
-    <!-- Chat messages will appear here -->
-  </section>
+  <div id="uploadResponse" aria-live="polite" aria-atomic="false" role="region">
+    <!-- Upload response or AI answers from file uploads appear here -->
+  </div>
 </main>
 
+<section id="chatSection" aria-label="Chat with AI">
+  <div id="chatBox" role="log" aria-live="polite" aria-atomic="false">
+    <!-- Chat messages will appear here -->
+  </div>
+
+  <form id="chatForm" autocomplete="off">
+    <input type="text" id="chatInput" name="chatInput" placeholder="Type your question:" required />
+    <button type="submit">Ask AI</button>
+  </form>
+</section>
+
 <script>
+  // Upload form logic
   const uploadForm = document.getElementById('uploadForm');
-  const chatBox = document.getElementById('chatBox');
-  const questionInput = document.getElementById('question');
-  const submitButton = uploadForm.querySelector('button[type="submit"]');
+  const uploadResponse = document.getElementById('uploadResponse');
 
   uploadForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const question = questionInput.value.trim();
-    if (!question) return;
-
-    appendMessage('You', question, 'user-msg');
-    submitButton.disabled = true;
-    submitButton.textContent = 'Loading...';
 
     const formData = new FormData(uploadForm);
 
     try {
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) throw new Error('Network response was not ok');
+
+      const data = await response.json();
+
+      uploadResponse.textContent = data.answer || "No response from AI.";
+    } catch (err) {
+      uploadResponse.textContent = 'Error: ' + err.message;
+    }
+  });
+
+  // Chat logic
+  const chatForm = document.getElementById('chatForm');
+  const chatBox = document.getElementById('chatBox');
+  const chatInput = document.getElementById('chatInput');
+
+  chatForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const question = chatInput.value.trim();
+
+    if (!question) return;
+
+    appendMessage('You', question, 'user-msg');
+
+    try {
+      const formData = new FormData();
+      formData.append('question', question);
+
       const response = await fetch('/api/ask', {
         method: 'POST',
         body: formData,
@@ -185,20 +276,19 @@
       if (!response.ok) throw new Error('Network response was not ok');
 
       const data = await response.json();
+
       appendMessage('AI', data.answer || "Sorry, I didn't get that.", 'ai-msg');
     } catch (err) {
       appendMessage('AI', 'Error: ' + err.message, 'ai-msg');
     }
 
-    questionInput.value = '';
-    submitButton.disabled = false;
-    submitButton.textContent = 'Submit';
-    chatBox.scrollTop = chatBox.scrollHeight;
+    chatInput.value = '';
+    chatInput.focus();
   });
 
-  function appendMessage(sender, text, className) {
+  function appendMessage(sender, text, cssClass) {
     const div = document.createElement('div');
-    div.className = className;
+    div.className = cssClass;
     div.innerHTML = `<strong>${sender}:</strong> ${text}`;
     chatBox.appendChild(div);
     chatBox.scrollTop = chatBox.scrollHeight;
