@@ -7,18 +7,26 @@
   <link rel="stylesheet" href="/static/style.css" />
 </head>
 <body>
+  <!-- HEADER -->
   <div class="header">
     <h1>Tools in Data Science Project 2: Data Analyst Agent</h1>
     <p>Renee Noronha | 23f3003731@ds.study.iitm.ac.in</p>
   </div>
 
+  <!-- UPLOAD FORM -->
   <div class="form-box">
     <h2>Upload Files & Ask a Question</h2>
     <form id="uploadForm">
       <label>Upload Questions (.txt) file (optional):</label><br />
-      <input type="file" name="file" /><br /><br />
+      <input type="file" name="txt_file" accept=".txt" /><br /><br />
 
-      <label>Ask a question:</label><br />
+      <label>Upload CSV Data (optional):</label><br />
+      <input type="file" name="csv_file" accept=".csv" /><br /><br />
+
+      <label>Upload an Image (optional):</label><br />
+      <input type="file" name="image" accept="image/*" /><br /><br />
+
+      <label>Your Question:</label><br />
       <input type="text" name="question" required /><br /><br />
 
       <button type="submit">Submit</button>
@@ -26,6 +34,7 @@
     <div id="uploadResponse" class="response-box"></div>
   </div>
 
+  <!-- CHAT FORM -->
   <div class="chat-box">
     <h2>Ask AI Anything</h2>
     <form id="chatForm">
@@ -37,6 +46,7 @@
   </div>
 
   <script>
+    // Handle Upload Form
     document.getElementById("uploadForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       const formData = new FormData(e.target);
@@ -49,6 +59,7 @@
         data.answer || data.error || "No response";
     });
 
+    // Handle Chat Form
     document.getElementById("chatForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       const question = document.getElementById("chatInput").value;
