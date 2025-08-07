@@ -1,143 +1,110 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Tools in Data Science Project 2: Data Analyst Agent</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f2f4f8;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
+    <title>Tools in Data Science Project 2: Data Analyst Agent</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 30px;
+            background: #f5f5f5;
+        }
 
-    header {
-      background-color: #003366;
-      color: white;
-      padding: 20px 30px;
-      width: 100%;
-      text-align: center;
-    }
+        h1 {
+            color: #333;
+        }
 
-    h1 {
-      margin-bottom: 5px;
-      font-size: 24px;
-    }
+        .form-section, .chatbox {
+            background: white;
+            padding: 20px;
+            margin-bottom: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
 
-    h2 {
-      font-size: 18px;
-      font-weight: normal;
-    }
+        .chatbox {
+            max-width: 600px;
+        }
 
-    .container {
-      background-color: white;
-      margin-top: 20px;
-      padding: 25px 30px;
-      border-radius: 12px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-      max-width: 600px;
-      width: 90%;
-    }
+        .chat-log {
+            border: 1px solid #ccc;
+            padding: 10px;
+            height: 200px;
+            overflow-y: scroll;
+            background: #fdfdfd;
+            margin-bottom: 10px;
+        }
 
-    label {
-      font-weight: bold;
-      display: block;
-      margin-top: 15px;
-    }
+        .chat-input {
+            display: flex;
+        }
 
-    input[type="file"] {
-      margin-top: 5px;
-    }
+        .chat-input input {
+            flex: 1;
+            padding: 8px;
+        }
 
-    button {
-      margin-top: 20px;
-      background-color: #0073e6;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 16px;
-    }
-
-    button:hover {
-      background-color: #005bb5;
-    }
-
-    .response-box {
-      margin-top: 30px;
-      padding: 15px;
-      background-color: #f0f8ff;
-      border-radius: 10px;
-      border-left: 5px solid #0073e6;
-      white-space: pre-wrap;
-    }
-
-    .footer {
-      margin-top: 40px;
-      font-size: 14px;
-      color: #666;
-    }
-
-    .chat-label {
-      margin-top: 30px;
-      font-size: 16px;
-      font-weight: bold;
-    }
-  </style>
+        .chat-input button {
+            padding: 8px 12px;
+        }
+    </style>
 </head>
 <body>
-  <header>
     <h1>Tools in Data Science Project 2: Data Analyst Agent</h1>
-    <h2>Renee Noronha | 23f3003731@ds.study.iitm.ac.in</h2>
-  </header>
+    <p><strong>Renee Noronha</strong> - 23f3003731@ds.study.iitm.ac.in</p>
 
-  <div class="container">
-    <form id="uploadForm">
-      <label for="questions">Questions (.txt):</label>
-      <input type="file" name="questions" required /><br />
+    <div class="form-section">
+        <h3>Upload Data and Ask Questions</h3>
+        <form id="upload-form" enctype="multipart/form-data">
+            <label>Questions (.txt): <input type="file" name="questions"></label><br><br>
+            <label>CSV Data (optional): <input type="file" name="data"></label><br><br>
+            <label>Image (optional): <input type="file" name="image"></label><br><br>
+            <button type="submit">Submit</button>
+        </form>
+        <pre id="upload-response"></pre>
+    </div>
 
-      <label for="data">CSV Data (optional):</label>
-      <input type="file" name="data" /><br />
+    <div class="chatbox">
+        <h3>Ask AI Anything</h3>
+        <div class="chat-log" id="chat-log"></div>
+        <div class="chat-input">
+            <input type="text" id="chat-question" placeholder="Type your question..." />
+            <button onclick="askAI()">Ask</button>
+        </div>
+    </div>
 
-      <label for="image">Image (optional):</label>
-      <input type="file" name="image" /><br />
-
-      <button type="submit">Submit</button>
-    </form>
-
-    <div class="chat-label">Answer:</div>
-    <div id="response" class="response-box">AI-generated response will appear here...</div>
-  </div>
-
-  <div class="footer">© 2025 IIT Madras - BS in Data Science</div>
-
-  <script>
-    const form = document.getElementById("uploadForm");
-    const responseBox = document.getElementById("response");
-
-    form.addEventListener("submit", async function (e) {
-      e.preventDefault();
-      responseBox.textContent = "🧠 Thinking... please wait";
-
-      const formData = new FormData(form);
-
-      try {
-        const res = await fetch("/api/", {
-          method: "POST",
-          body: formData,
+    <script>
+        document.getElementById("upload-form").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const form = e.target;
+            const formData = new FormData(form);
+            const res = await fetch("/api/", {
+                method: "POST",
+                body: formData
+            });
+            const result = await res.json();
+            document.getElementById("upload-response").innerText = JSON.stringify(result, null, 2);
         });
 
-        const data = await res.json();
-        responseBox.textContent = data.response || "No response from AI.";
-      } catch (err) {
-        responseBox.textContent = "❌ Error: " + err.message;
-      }
-    });
-  </script>
+        async function askAI() {
+            const question = document.getElementById("chat-question").value;
+            if (!question) return;
+
+            const chatLog = document.getElementById("chat-log");
+            chatLog.innerHTML += `<p><strong>You:</strong> ${question}</p>`;
+
+            const res = await fetch("/chat/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ question })
+            });
+
+            const result = await res.json();
+            const answer = result.answer || result.error;
+            chatLog.innerHTML += `<p><strong>AI:</strong> ${answer}</p>`;
+            document.getElementById("chat-question").value = "";
+        }
+    </script>
 </body>
 </html>
