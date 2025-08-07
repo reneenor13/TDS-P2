@@ -3,6 +3,8 @@ from fastapi import FastAPI, UploadFile, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 from dotenv import load_dotenv
 import openai
 import requests
@@ -12,6 +14,8 @@ import seaborn as sns
 import io
 import base64
 import json
+import re
+from bs4 import BeautifulSoup
 
 # Load environment variables
 load_dotenv()
@@ -22,6 +26,15 @@ client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
+
+# Optional: CORS middleware (add if cross-origin calls expected)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # change in production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 def ask_chatgpt(prompt: str) -> str:
@@ -96,7 +109,6 @@ def generate_scatterplot(df):
     buf.seek(0)
     img_base64 = base64.b64encode(buf.read()).decode('utf-8')
 
-    # Limit size - PNG under 100k bytes might be tight; can adjust dpi or compress if needed
     return f"data:image/png;base64,{img_base64}"
 
 
@@ -112,8 +124,6 @@ async def ask_question(data: dict):
         if not question:
             return JSONResponse(content={"error": "Question cannot be empty"}, status_code=400)
 
-        # Detect if this is a special scrape + analysis question
-        # (e.g., user wants to scrape the Wikipedia page and get answers + plot)
         if "highest grossing films" in question.lower():
             df = scrape_highest_grossing_films()
             answers = answer_questions(df)
@@ -121,7 +131,6 @@ async def ask_question(data: dict):
             answers.append(image_uri)
             return JSONResponse(content={"answer": answers})
 
-        # Else regular chatgpt call
         answer = ask_chatgpt(question)
         return {"answer": answer}
 
@@ -138,14 +147,12 @@ async def upload_files(
     try:
         response_text = ""
 
-        # Process questions.txt
         if questionsFile:
             text = await questionsFile.read()
             content = text.decode("utf-8")
             answer = ask_chatgpt(content)
             response_text += "📄 **Questions.txt Answer**:\n" + answer + "\n\n"
 
-        # Process csv file
         if csvFile:
             data = await csvFile.read()
             content = data.decode("utf-8")
@@ -153,7 +160,6 @@ async def upload_files(
             answer = ask_chatgpt(prompt)
             response_text += "📊 **CSV Analysis**:\n" + answer + "\n\n"
 
-        # Process image file (OpenAI does not support image in this backend yet)
         if imageFile:
             response_text += "🖼️ **Image** uploaded, but image processing is not supported in this API setup.\n"
 
@@ -163,3 +169,50 @@ async def upload_files(
         return {"answer": response_text.strip()}
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
+
+# -- New Wikipedia scraping code below --
+
+class TopicRequest(BaseModel):
+    topic: str
+
+def scrape_wikipedia_questions(topic: str) -> list[str]:
+    base_url = "https://en.wikipedia.org/wiki/"
+    url = base_url + topic.replace(" ", "_")
+
+    try:
+        res = requests.get(url)
+        res.raise_for_status()
+        soup = BeautifulSoup(res.text, "html.parser")
+
+        questions = set()
+
+        # Extract headings ending with '?'
+        for header_tag in ['h2', 'h3', 'h4', 'h5']:
+            for header in soup.find_all(header_tag):
+                header_text = header.get_text(separator=" ", strip=True)
+                if header_text.endswith('?'):
+                    questions.add(header_text)
+
+        # Extract sentences ending with '?'
+        paragraphs = soup.find_all('p')
+        question_pattern = re.compile(r'([A-Z][^?]*\?)')
+
+        for p in paragraphs:
+            text = p.get_text(" ", strip=True)
+            matches = question_pattern.findall(text)
+            for match in matches:
+                questions.add(match.strip())
+
+        return list(questions)
+
+    except Exception as e:
+        print(f"Error scraping Wikipedia: {e}")
+        return []
+
+
+@app.post("/api/wikipedia_questions")
+async def wikipedia_questions_endpoint(request: TopicRequest):
+    questions = scrape_wikipedia_questions(request.topic)
+    if not questions:
+        return JSONResponse(content={"error": "Could not find questions for the given topic."}, status_code=404)
+    return {"questions": questions}
