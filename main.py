@@ -1,5 +1,5 @@
 import os
-from fastapi import FastAPI, UploadFile, Request
+from fastapi import FastAPI, UploadFile, Request, Form
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -14,7 +14,7 @@ import io
 import base64
 import re
 from bs4 import BeautifulSoup
-from google import genai
+import google.generativeai as genai  # Correct Gemini import
 
 # Load environment variables (expects GEMINI_API_KEY in .env)
 load_dotenv()
@@ -22,29 +22,33 @@ load_dotenv()
 # Initialize Google Gemini API client
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
-# FastAPI app setup
 app = FastAPI()
+
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # change as necessary for production
+    allow_origins=["*"],  # change in production for security
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 def ask_gemini(prompt: str) -> str:
-    """Use Google Gemini to generate a response to the prompt."""
-    model = genai.models.generate_content(
-        model="gemini-2.5-flash",  # adjust model as needed
-        contents=prompt,
-    )
-    return model.text
+    """Use Google Gemini chat completions API to generate a response."""
+    try:
+        response = genai.chat.completions.create(
+            model="models/chat-bison-001",  # recommended Gemini chat model
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.7,
+            max_tokens=1000,
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        return f"Error from Gemini API: {e}"
 
-def scrape_highest_grossing_films():
-    """Scrape Wikipedia to build DataFrame of highest grossing films."""
+def scrape_highest_grossing_films() -> pd.DataFrame:
     url = "https://en.wikipedia.org/wiki/List_of_highest-grossing_films"
     response = requests.get(url)
     tables = pd.read_html(response.text)
@@ -63,18 +67,16 @@ def scrape_highest_grossing_films():
         df['Rank'] = pd.to_numeric(df['Rank'], errors='coerce')
     return df
 
-def answer_questions(df):
-    """Answer the four sample questions using the scraped DataFrame."""
+def answer_questions(df: pd.DataFrame) -> list:
     count_2bn_before_2000 = df[(df['Worldwide gross'] >= 2_000_000_000) & (df['Year'] < 2000)].shape[0]
     over_1_5bn = df[df['Worldwide gross'] > 1_500_000_000]
     earliest = over_1_5bn.sort_values('Year').iloc[0]['Title'] if not over_1_5bn.empty else None
     if 'Peak' not in df.columns:
-        df['Peak'] = df['Rank'] + 10
+        df['Peak'] = df['Rank'] + 10  # dummy example, replace with real if needed
     correlation = df['Rank'].corr(df['Peak'])
     return [count_2bn_before_2000, earliest, correlation]
 
-def generate_scatterplot(df):
-    """Generate a Base64-encoded PNG plot."""
+def generate_scatterplot(df: pd.DataFrame) -> str:
     plt.figure(figsize=(8, 6))
     sns.scatterplot(data=df, x='Rank', y='Peak')
     sns.regplot(data=df, x='Rank', y='Peak', scatter=False, color='red', line_kws={'linestyle': '--'})
@@ -132,7 +134,8 @@ class Topic(BaseModel):
 def scrape_wiki_questions(topic: str) -> list[str]:
     url = f"https://en.wikipedia.org/wiki/{topic.replace(' ', '_')}"
     try:
-        r = requests.get(url); r.raise_for_status()
+        r = requests.get(url)
+        r.raise_for_status()
         soup = BeautifulSoup(r.text, "html.parser")
         qs = set()
         for tag in ['h2', 'h3', 'h4']:
