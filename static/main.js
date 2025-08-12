@@ -1,8 +1,9 @@
+// Handle file uploads
 document.getElementById("uploadForm").addEventListener("submit", async function (e) {
   e.preventDefault();
 
-  const responseEl = document.getElementById("response");
-  responseEl.innerText = "Processing files, please wait...";
+  const uploadResponseEl = document.getElementById("uploadResponse");
+  uploadResponseEl.innerText = "Processing files, please wait...";
   
   const formData = new FormData(this);
 
@@ -15,33 +16,34 @@ document.getElementById("uploadForm").addEventListener("submit", async function 
     const data = await res.json();
 
     if (data.answer) {
-      // Pretty print JSON if it's a JSON array/string
+      // Pretty print JSON if it's valid JSON
       try {
         const parsed = JSON.parse(data.answer);
-        responseEl.innerText = JSON.stringify(parsed, null, 2);
+        uploadResponseEl.innerText = JSON.stringify(parsed, null, 2);
       } catch {
-        responseEl.innerText = data.answer;
+        uploadResponseEl.innerText = data.answer;
       }
     } else if (data.error) {
-      responseEl.innerText = `Error: ${data.error}`;
+      uploadResponseEl.innerText = `Error: ${data.error}`;
     } else {
-      responseEl.innerText = "No response from server.";
+      uploadResponseEl.innerText = "No response from server.";
     }
   } catch (err) {
-    responseEl.innerText = `Network or server error: ${err.message}`;
+    uploadResponseEl.innerText = `Network or server error: ${err.message}`;
   }
 });
 
-async function askAI() {
-  const question = document.getElementById("questionInput").value.trim();
-  const responseEl = document.getElementById("response");
+// Handle "Ask AI" button click
+document.getElementById("askBtn").addEventListener("click", async () => {
+  const question = document.getElementById("userQuestion").value.trim();
+  const chatResponseEl = document.getElementById("chatResponse");
 
   if (!question) {
-    responseEl.innerText = "Please enter a question first.";
+    chatResponseEl.innerText = "Please enter a question first.";
     return;
   }
 
-  responseEl.innerText = "Waiting for AI response...";
+  chatResponseEl.innerText = "Waiting for AI response...";
 
   try {
     const res = await fetch("/api/ask", {
@@ -53,19 +55,18 @@ async function askAI() {
     const data = await res.json();
 
     if (data.answer) {
-      // Try pretty print if JSON
       try {
         const parsed = JSON.parse(data.answer);
-        responseEl.innerText = JSON.stringify(parsed, null, 2);
+        chatResponseEl.innerText = JSON.stringify(parsed, null, 2);
       } catch {
-        responseEl.innerText = data.answer;
+        chatResponseEl.innerText = data.answer;
       }
     } else if (data.error) {
-      responseEl.innerText = `Error: ${data.error}`;
+      chatResponseEl.innerText = `Error: ${data.error}`;
     } else {
-      responseEl.innerText = "No response from server.";
+      chatResponseEl.innerText = "No response from server.";
     }
   } catch (err) {
-    responseEl.innerText = `Network or server error: ${err.message}`;
+    chatResponseEl.innerText = `Network or server error: ${err.message}`;
   }
-}
+});
