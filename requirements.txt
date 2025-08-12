@@ -1,11 +1,14 @@
+
 fastapi
 uvicorn
 jinja2
 python-multipart
-google-generativeai==0.3.2
 python-dotenv
 requests
 pandas
 matplotlib
 seaborn
 beautifulsoup4
+google-generativeai
+networkx
+numpy
