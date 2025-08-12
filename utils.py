@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-import openai
+import google.generativeai as genai
 import pandas as pd
 import requests
 import duckdb
@@ -12,26 +12,19 @@ import base64
 # Load environment variables
 load_dotenv()
 
-client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# Configure Google Gemini API
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
-
-def ask_openai(prompt: str, model: str = "gpt-4o") -> str:
+def ask_gemini(prompt: str, model: str = "gemini-1.5-flash") -> str:
     """
-    Send a prompt to OpenAI's chat model and return the response text.
+    Send a prompt to Google's Gemini model and return the response text.
     """
     try:
-        response = client.chat.completions.create(
-            model=model,
-            messages=[
-                {"role": "user", "content": prompt}
-            ],
-            max_tokens=1000,
-            temperature=0.7,
-        )
-        return response.choices[0].message.content.strip()
+        model_client = genai.GenerativeModel(model)
+        response = model_client.generate_content(prompt)
+        return response.text.strip()
     except Exception as e:
         return f"❌ Error: {str(e)}"
-
 
 def scrape_tables_from_url(url: str) -> pd.DataFrame:
     """
@@ -48,7 +41,6 @@ def scrape_tables_from_url(url: str) -> pd.DataFrame:
     # Return the largest table
     return max(tables, key=lambda df: df.size)
 
-
 def run_sql_on_dataframe(df: pd.DataFrame, sql_query: str) -> any:
     """
     Run a SQL query on a pandas DataFrame using DuckDB.
@@ -60,7 +52,6 @@ def run_sql_on_dataframe(df: pd.DataFrame, sql_query: str) -> any:
         return result
     finally:
         con.close()
-
 
 def generate_scatterplot_base64(df: pd.DataFrame, x_col: str, y_col: str, regression_line: bool = False) -> str:
     """
