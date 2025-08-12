@@ -6,58 +6,49 @@ from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
-import openai
 import requests
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import io
 import base64
-import json
 import re
 from bs4 import BeautifulSoup
+from google import genai
 
-# Load environment variables
+# Load environment variables (expects GEMINI_API_KEY in .env)
 load_dotenv()
 
-client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# Initialize Google Gemini API client
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 # FastAPI app setup
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-# Optional: CORS middleware (add if cross-origin calls expected)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # change in production
+    allow_origins=["*"],  # change as necessary for production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-
-def ask_chatgpt(prompt: str) -> str:
-    """Send prompt to OpenAI and return response text using new SDK syntax."""
-    response = client.chat.completions.create(
-        model="gpt-4o",  # or "gpt-4" / "gpt-3.5-turbo"
-        messages=[
-            {"role": "user", "content": prompt}
-        ],
-        max_tokens=1000,
-        temperature=0.7,
+def ask_gemini(prompt: str) -> str:
+    """Use Google Gemini to generate a response to the prompt."""
+    model = genai.models.generate_content(
+        model="gemini-2.5-flash",  # adjust model as needed
+        contents=prompt,
     )
-    return response.choices[0].message.content.strip()
-
+    return model.text
 
 def scrape_highest_grossing_films():
+    """Scrape Wikipedia to build DataFrame of highest grossing films."""
     url = "https://en.wikipedia.org/wiki/List_of_highest-grossing_films"
     response = requests.get(url)
     tables = pd.read_html(response.text)
-    # Pick the largest table, typically the main one
     df = max(tables, key=lambda t: t.shape[0])
-
-    # Clean column names & data
     df.columns = [col.strip() for col in df.columns]
     if 'Worldwide gross' in df.columns:
         df['Worldwide gross'] = (
@@ -70,73 +61,48 @@ def scrape_highest_grossing_films():
         df['Year'] = pd.to_numeric(df['Year'], errors='coerce')
     if 'Rank' in df.columns:
         df['Rank'] = pd.to_numeric(df['Rank'], errors='coerce')
-    # Assume 'Peak' may not exist; create dummy if needed later
     return df
 
-
 def answer_questions(df):
-    # 1. How many $2 bn movies were released before 2000?
-    count_2bn_before_2000 = df[
-        (df['Worldwide gross'] >= 2_000_000_000) & (df['Year'] < 2000)
-    ].shape[0]
-
-    # 2. Earliest film that grossed over $1.5 bn
+    """Answer the four sample questions using the scraped DataFrame."""
+    count_2bn_before_2000 = df[(df['Worldwide gross'] >= 2_000_000_000) & (df['Year'] < 2000)].shape[0]
     over_1_5bn = df[df['Worldwide gross'] > 1_500_000_000]
-    earliest_film = (
-        over_1_5bn.sort_values('Year').iloc[0]['Title']
-        if not over_1_5bn.empty else None
-    )
-
-    # 3. Correlation between Rank and Peak (if Peak exists)
+    earliest = over_1_5bn.sort_values('Year').iloc[0]['Title'] if not over_1_5bn.empty else None
     if 'Peak' not in df.columns:
-        df['Peak'] = df['Rank'] + 10  # dummy example to allow correlation
-
+        df['Peak'] = df['Rank'] + 10
     correlation = df['Rank'].corr(df['Peak'])
-
-    return [count_2bn_before_2000, earliest_film, correlation]
-
+    return [count_2bn_before_2000, earliest, correlation]
 
 def generate_scatterplot(df):
+    """Generate a Base64-encoded PNG plot."""
     plt.figure(figsize=(8, 6))
     sns.scatterplot(data=df, x='Rank', y='Peak')
     sns.regplot(data=df, x='Rank', y='Peak', scatter=False, color='red', line_kws={'linestyle': '--'})
     plt.title('Rank vs Peak')
     plt.grid(True)
-
     buf = io.BytesIO()
     plt.savefig(buf, format='png', bbox_inches='tight')
     plt.close()
     buf.seek(0)
-    img_base64 = base64.b64encode(buf.read()).decode('utf-8')
-
-    return f"data:image/png;base64,{img_base64}"
-
+    encoded = base64.b64encode(buf.read()).decode('utf-8')
+    return f"data:image/png;base64,{encoded}"
 
 @app.get("/", response_class=HTMLResponse)
-async def serve_home(request: Request):
+async def home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
-
 @app.post("/api/ask")
-async def ask_question(data: dict):
-    try:
-        question = data.get("question")
-        if not question:
-            return JSONResponse(content={"error": "Question cannot be empty"}, status_code=400)
-
-        if "highest grossing films" in question.lower():
-            df = scrape_highest_grossing_films()
-            answers = answer_questions(df)
-            image_uri = generate_scatterplot(df)
-            answers.append(image_uri)
-            return JSONResponse(content={"answer": answers})
-
-        answer = ask_chatgpt(question)
-        return {"answer": answer}
-
-    except Exception as e:
-        return JSONResponse(content={"error": str(e)}, status_code=500)
-
+async def ask_q(data: dict):
+    question = data.get("question")
+    if not question:
+        return JSONResponse({"error": "Question is required."}, status_code=400)
+    if "highest grossing films" in question.lower():
+        df = scrape_highest_grossing_films()
+        answers = answer_questions(df)
+        answers.append(generate_scatterplot(df))
+        return JSONResponse({"answer": answers})
+    answer = ask_gemini(question)
+    return {"answer": answer}
 
 @app.post("/api/upload")
 async def upload_files(
@@ -144,75 +110,46 @@ async def upload_files(
     csvFile: UploadFile = None,
     imageFile: UploadFile = None
 ):
-    try:
-        response_text = ""
+    response = ""
+    if questionsFile:
+        content = (await questionsFile.read()).decode("utf-8")
+        ans = ask_gemini(content)
+        response += f"Questions.txt Answer:\n{ans}\n\n"
+    if csvFile:
+        content = (await csvFile.read()).decode("utf-8")
+        prompt = f"This is the CSV data:\n{content}\nPlease summarise and analyse."
+        ans = ask_gemini(prompt)
+        response += f"CSV Analysis:\n{ans}\n\n"
+    if imageFile:
+        response += "Image uploaded, but processing not supported yet.\n"
+    if not response:
+        response = "No files uploaded."
+    return {"answer": response.strip()}
 
-        if questionsFile:
-            text = await questionsFile.read()
-            content = text.decode("utf-8")
-            answer = ask_chatgpt(content)
-            response_text += "📄 **Questions.txt Answer**:\n" + answer + "\n\n"
-
-        if csvFile:
-            data = await csvFile.read()
-            content = data.decode("utf-8")
-            prompt = f"This is the CSV data:\n{content}\n\nPlease summarise and analyse it."
-            answer = ask_chatgpt(prompt)
-            response_text += "📊 **CSV Analysis**:\n" + answer + "\n\n"
-
-        if imageFile:
-            response_text += "🖼️ **Image** uploaded, but image processing is not supported in this API setup.\n"
-
-        if not response_text:
-            response_text = "No files uploaded."
-
-        return {"answer": response_text.strip()}
-    except Exception as e:
-        return JSONResponse(content={"error": str(e)}, status_code=500)
-
-# -- New Wikipedia scraping code below --
-
-class TopicRequest(BaseModel):
+class Topic(BaseModel):
     topic: str
 
-def scrape_wikipedia_questions(topic: str) -> list[str]:
-    base_url = "https://en.wikipedia.org/wiki/"
-    url = base_url + topic.replace(" ", "_")
-
+def scrape_wiki_questions(topic: str) -> list[str]:
+    url = f"https://en.wikipedia.org/wiki/{topic.replace(' ', '_')}"
     try:
-        res = requests.get(url)
-        res.raise_for_status()
-        soup = BeautifulSoup(res.text, "html.parser")
-
-        questions = set()
-
-        # Extract headings ending with '?'
-        for header_tag in ['h2', 'h3', 'h4', 'h5']:
-            for header in soup.find_all(header_tag):
-                header_text = header.get_text(separator=" ", strip=True)
-                if header_text.endswith('?'):
-                    questions.add(header_text)
-
-        # Extract sentences ending with '?'
-        paragraphs = soup.find_all('p')
-        question_pattern = re.compile(r'([A-Z][^?]*\?)')
-
-        for p in paragraphs:
-            text = p.get_text(" ", strip=True)
-            matches = question_pattern.findall(text)
-            for match in matches:
-                questions.add(match.strip())
-
-        return list(questions)
-
-    except Exception as e:
-        print(f"Error scraping Wikipedia: {e}")
+        r = requests.get(url); r.raise_for_status()
+        soup = BeautifulSoup(r.text, "html.parser")
+        qs = set()
+        for tag in ['h2', 'h3', 'h4']:
+            for h in soup.find_all(tag):
+                t = h.get_text(" ", strip=True)
+                if t.endswith('?'):
+                    qs.add(t)
+        for p in soup.find_all('p'):
+            for match in re.findall(r'([A-Z][^?]*\?)', p.get_text(" ", strip=True)):
+                qs.add(match)
+        return list(qs)
+    except:
         return []
 
-
 @app.post("/api/wikipedia_questions")
-async def wikipedia_questions_endpoint(request: TopicRequest):
-    questions = scrape_wikipedia_questions(request.topic)
-    if not questions:
-        return JSONResponse(content={"error": "Could not find questions for the given topic."}, status_code=404)
-    return {"questions": questions}
+async def wiki_questions(req: Topic):
+    result = scrape_wiki_questions(req.topic)
+    if not result:
+        return JSONResponse({"error": "No questions found."}, status_code=404)
+    return {"questions": result}
