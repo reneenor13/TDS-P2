@@ -11,3 +11,4 @@ python-dotenv
 python-multipart
 networkx
 duckdb
+jinja2
