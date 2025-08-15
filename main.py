@@ -1,3 +1,5 @@
+from utils import generate_sales_bar_chart, generate_cumulative_sales_chart
+
 def generate_sales_bar_chart(df: pd.DataFrame) -> str:
     """Generate sales bar chart with blue bars - FIXED VERSION."""
     plt.figure(figsize=(10, 6))
